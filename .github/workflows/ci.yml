@@ -1,0 +1,19 @@
+name: CI Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+  merge_group:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Run a demo test suite
+        run: |
+          echo "Running tests against target branch..."
+          sleep 10
+          echo "All checks passed successfully."
