@@ -1,8 +1,8 @@
 name: Monorepo Tests
 
 on:
-  # pull_request:
-  #   branches: [ main ]
+  pull_request:
+    branches: [ main ]
   merge_group:
     types: [ checks_requested ]
 
@@ -27,7 +27,7 @@ jobs:
   test:
     name: Test (${{ matrix.service }})
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.services != '[]' }}
+    if: ${{ github.event_name == 'merge_group' && needs.detect-changes.outputs.services != '[]' }}
     strategy:
       fail-fast: false
       matrix:
