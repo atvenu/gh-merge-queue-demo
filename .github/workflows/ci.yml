@@ -1,4 +1,4 @@
-name: CI Checks
+name: Monorepo Tests
 
 on:
   pull_request:
@@ -7,15 +7,57 @@ on:
     types: [ checks_requested ]
 
 jobs:
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            simple_calculator:
+              - 'simple_calculator/**'
+            advanced_calculator:
+              - 'advanced_calculator/**'
+
   test:
+    name: Test (${{ matrix.service }})
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.services != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.detect-changes.outputs.services) }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v7
 
-      - name: Demo step
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: '.python-version'
+          cache: 'pip'
+          cache-dependency-path: '${{ matrix.service }}/requirements.txt'
+
+      - name: Install dependencies & run pytest
+        working-directory: ${{ matrix.service }}
         run: |
-          echo "Queue check running on: ${{ github.ref }}"
-          sleep 300
+          pip install -r requirements.txt
+          pytest -v
+
+  all-tests-passed:
+    name: All Tests Passed
+    needs: [detect-changes, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check overall build health
+        run: |
+          if [ "${{ needs.test.result }}" = "failure" ] || [ "${{ needs.detect-changes.result }}" != "success" ]; then
+            echo "Test suite failed."
+            exit 1
+          fi
+          echo "All affected test suites passed or were skipped."
