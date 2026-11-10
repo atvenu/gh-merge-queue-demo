@@ -1,0 +1,54 @@
+#!/usr/bin/env groovy
+
+// Standalone pipeline for the simple_calculator sub-project.
+// Builds the service image and runs its unit tests inside the container.
+//
+// Used two ways:
+//   - Directly, as a Pipeline job with "Pipeline script from SCM" and
+//     Script Path = simple_calculator/Jenkinsfile (checks out the whole repo).
+//   - As a child job triggered by the root Jenkinsfile. If you trigger it with
+//     a commitHash parameter, add a checkout of that commit (see note below).
+
+pipeline {
+    agent any   // swap for a docker-capable label, e.g. agent { label 'docker' }
+    options { timestamps() }
+
+    environment {
+        SERVICE = 'simple_calculator'
+        IMAGE   = "simple_calculator:b${env.BUILD_NUMBER}"
+    }
+
+    stages {
+        // If run as a child job against a merge-queue commit, uncomment and pass
+        // a `commitHash` string parameter from the parent:
+        // stage('Checkout commit') {
+        //     steps {
+        //         checkout([$class: 'GitSCM',
+        //             branches: [[name: params.commitHash]],
+        //             userRemoteConfigs: [[
+        //                 url: 'https://github.com/atvenu/gh-merge-queue-demo.git',
+        //                 credentialsId: 'atvbuild-github']]])
+        //     }
+        // }
+
+        stage('Build image') {
+            steps { sh 'docker build -t "$IMAGE" "$SERVICE"' }
+        }
+
+        stage('Run tests') {
+            steps {
+                sh '''
+                    mkdir -p "$SERVICE/reports"
+                    docker run --rm -v "$PWD/$SERVICE/reports:/app/reports" "$IMAGE"
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            junit allowEmptyResults: true, testResults: 'simple_calculator/reports/*.xml'
+            sh 'docker rmi "$IMAGE" >/dev/null 2>&1 || true'
+        }
+    }
+}
