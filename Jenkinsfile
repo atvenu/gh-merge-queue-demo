@@ -55,6 +55,25 @@ pipeline {
             junit allowEmptyResults: true, testResults: '*/reports/*.xml'
             sh 'docker image prune -f >/dev/null 2>&1 || true'
         }
+        // Publish ONE consistent status context on both PR builds and
+        // merge-queue (gh-readonly-queue/*) builds, so the same required
+        // check can gate queue entry (on the PR head) and the merge
+        // (on the queue branch). The plugin's per-type contexts
+        // (pr-head vs branch) can't do that.
+        success {
+            githubNotify context: 'ci/jenkins', status: 'SUCCESS',
+                         description: 'Build passed',
+                         credentialsId: 'atvbuild-github',
+                         account: 'atvenu', repo: 'gh-merge-queue-demo',
+                         sha: env.GIT_COMMIT
+        }
+        failure {
+            githubNotify context: 'ci/jenkins', status: 'FAILURE',
+                         description: 'Build failed',
+                         credentialsId: 'atvbuild-github',
+                         account: 'atvenu', repo: 'gh-merge-queue-demo',
+                         sha: env.GIT_COMMIT
+        }
     }
 }
 
