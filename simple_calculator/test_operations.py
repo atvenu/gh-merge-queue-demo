@@ -1,4 +1,4 @@
-from operations import add, subtract
+from operations import add, subtract, multiply
 
 
 def test_add():
@@ -11,3 +11,9 @@ def test_subtract():
     assert subtract(5, 3) == 2
     assert subtract(1, 1) == 0
     assert subtract(0, 0) == 0
+
+
+def test_multiply():
+    assert multiply(4, 3) == 12
+    assert multiply(-1, 1) == -1
+    assert multiply(0, 0) == 0
