@@ -55,30 +55,6 @@ pipeline {
             junit allowEmptyResults: true, testResults: '*/reports/*.xml'
             sh 'docker image prune -f >/dev/null 2>&1 || true'
         }
-        // Publish ONE consistent status context on both PR builds and
-        // merge-queue (gh-readonly-queue/*) builds, so the same required
-        // check can gate queue entry (on the PR head) and the merge
-        // (on the queue branch). The plugin's per-type contexts
-        // (pr-head vs branch) can't do that. We post via curl because the
-        // GitHub Plugin (githubNotify) isn't installed on this Jenkins.
-        success { script { postStatus('success', 'Build passed') } }
-        failure { script { postStatus('failure', 'Build failed') } }
-    }
-}
-
-// Post a commit status to GitHub via the REST API. Uses the atvbuild-github
-// token (username/password credential; the password is the token).
-def postStatus(String state, String description) {
-    withCredentials([usernamePassword(credentialsId: 'atvbuild-github',
-                                      usernameVariable: 'GH_USER',
-                                      passwordVariable: 'GH_TOKEN')]) {
-        sh """
-            curl -sS -X POST \
-              -H "Authorization: token \$GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              https://api.github.com/repos/atvenu/gh-merge-queue-demo/statuses/${env.GIT_COMMIT} \
-              -d '{"state":"${state}","context":"ci/jenkins","description":"${description}"}'
-        """
     }
 }
 
