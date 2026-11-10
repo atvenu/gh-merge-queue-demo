@@ -27,7 +27,8 @@ jobs:
   test:
     name: Test (${{ matrix.service }})
     needs: detect-changes
-    if: ${{ github.event_name == 'merge_group' && needs.detect-changes.outputs.services != '[]' }}
+    if: ${{ needs.detect-changes.outputs.services != '[]' }}
+    # if: ${{ github.event_name == 'merge_group' && needs.detect-changes.outputs.services != '[]' }}
     strategy:
       fail-fast: false
       matrix:
