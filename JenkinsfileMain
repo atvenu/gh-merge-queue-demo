@@ -1,0 +1,46 @@
+#!/usr/bin/env groovy
+
+// Trunk (main) build for the "monorepo".
+//
+// Mirrors JenkinsfileTrunk in the real monorepo: builds and tests EVERY
+// sub-project unconditionally, with no change detection. Use this for the
+// Jenkins project that builds the main branch (phase 1: prove the build works).
+//
+// The PR / merge-queue selective build lives in the root Jenkinsfile.
+
+pipeline {
+    agent any   // swap for a docker-capable label, e.g. agent { label 'docker' }
+    options { timestamps() }
+
+    stages {
+        stage('Build & test sub-projects') {
+            parallel {
+                stage('simple_calculator') {
+                    steps { script { buildAndTest('simple_calculator') } }
+                }
+                stage('advanced_calculator') {
+                    steps { script { buildAndTest('advanced_calculator') } }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            junit allowEmptyResults: true, testResults: '*/reports/*.xml'
+            sh 'docker image prune -f >/dev/null 2>&1 || true'
+        }
+    }
+}
+
+// Build the sub-project image and run its unit tests inside the container.
+// The sub-project Dockerfile's CMD runs pytest and writes JUnit XML to
+// /app/reports, which we bind-mount out so we can publish it.
+def buildAndTest(String service) {
+    def image = "${service}:b${env.BUILD_NUMBER}"
+    sh """
+        docker build -t ${image} ${service}
+        mkdir -p ${service}/reports
+        docker run --rm -v "\$PWD/${service}/reports:/app/reports" ${image}
+    """
+}
