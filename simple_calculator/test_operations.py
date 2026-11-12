@@ -17,3 +17,7 @@ def test_multiply():
     assert multiply(3, 4) == 12
     assert multiply(-1, 1) == -1
     assert multiply(0, 0) == 0
+
+
+def test_multiply_sign():
+    assert multiply(-2, 3) == -6
