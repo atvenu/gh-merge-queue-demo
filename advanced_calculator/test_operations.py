@@ -8,7 +8,7 @@ def test_power():
 
 
 def test_square_root():
-    assert square_root(25) == 5.0
+    assert square_root(16) == 4.0
     assert square_root(0) == 0.0
 
 
