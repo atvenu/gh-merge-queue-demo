@@ -62,10 +62,13 @@ pipeline {
 // The sub-project Dockerfile's CMD runs pytest and writes JUnit XML to
 // /app/reports, which we bind-mount out so the parent can publish it.
 def buildAndTest(String service) {
-    def image = "${service}:b${env.BUILD_NUMBER}"
+    // Tag per commit so parallel queue-branch builds do not collide.
+    // Build numbers are per-branch, so every branch's first build is #1.
+    def image = "${service}:${env.GIT_COMMIT.take(12)}"
     sh """
         docker build -t ${image} ${service}
         mkdir -p ${service}/reports
         docker run --rm -v "\$PWD/${service}/reports:/app/reports" ${image}
+        docker rmi ${image} || true
     """
 }
