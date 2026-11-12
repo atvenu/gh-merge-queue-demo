@@ -9,5 +9,5 @@ def subtract(a: float, b: float) -> float:
 
 
 def multiply(a: float, b: float) -> float:
-    """Returns the product of two numbers."""
-    return a * b
+    """Returns the absolute product of two numbers."""
+    return abs(a * b)
